@@ -149,3 +149,9 @@ def test_a_key_this_platform_binds_is_accepted(monkeypatch, tmp_path):
     result, cfg = _run(monkeypatch, tmp_path, ["hotkey", "set", "right_meta"])
     assert result.exit_code == 0, result.output
     assert "right_meta" in cfg.read_text(encoding="utf-8")
+
+
+def test_a_media_key_can_be_set_on_linux(monkeypatch, tmp_path):
+    result, cfg = _run(monkeypatch, tmp_path, ["hotkey", "set", "previoussong"])
+    assert result.exit_code == 0, result.output
+    assert 'key = "previoussong"' in cfg.read_text(encoding="utf-8")

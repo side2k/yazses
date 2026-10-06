@@ -24,9 +24,29 @@ _KEY_SYM_MAP: dict[str, str] = {
     "left_shift": "Shift_L",
     "right_option": "Alt_R",
     "left_option": "Alt_L",
+    "previoussong": "XF86_AudioPrev",
+    "nextsong": "XF86_AudioNext",
+    "playpause": "XF86_AudioPlay",
+    "search": "XF86_Search",
 }
 
 _CHARACTER_KEYS: frozenset[str] = frozenset({"space"})
+
+
+def _resolve_keysym(key_sym_str: str) -> int:
+    """The keysym for *key_sym_str*, refusing NoSymbol.
+
+    python-xlib only knows the XF86 keysyms once their group is loaded, and an
+    unknown name resolves to 0 — which, passed on to `grab_key`, grabs some other
+    key rather than failing.
+    """
+    from Xlib import XK
+
+    XK.load_keysym_group("xf86")
+    keysym = XK.string_to_keysym(key_sym_str)
+    if not keysym:
+        raise ValueError(f"Unknown X11 keysym {key_sym_str!r}")
+    return keysym
 
 
 class X11GrabHotkey:
@@ -48,6 +68,7 @@ class X11GrabHotkey:
             )
         self._key_id = name
         self._key_sym_str = _KEY_SYM_MAP[name]
+        self._keysym = _resolve_keysym(self._key_sym_str)
         self._produces_char = name in _CHARACTER_KEYS
         self._threshold_ms = threshold_ms
         self._on_hold_start = on_hold_start
@@ -61,13 +82,18 @@ class X11GrabHotkey:
     # ── public interface ──────────────────────────────────────────────────────
 
     def run(self) -> None:
-        from Xlib import XK, X
+        from Xlib import X
         from Xlib import display as xdisplay
 
         d = xdisplay.Display()
         root = d.screen().root
-        keysym = XK.string_to_keysym(self._key_sym_str)
-        keycode = d.keysym_to_keycode(keysym)
+        keycode = d.keysym_to_keycode(self._keysym)
+        if not keycode:
+            # 0 is AnyKey to grab_key: grabbing it would take the whole keyboard.
+            d.close()
+            raise RuntimeError(
+                f"X11GrabHotkey: no keycode for {self._key_sym_str} in the current keymap"
+            )
         root.grab_key(keycode, X.AnyModifier, True, X.GrabModeAsync, X.GrabModeAsync)
         root.change_attributes(event_mask=X.KeyPressMask | X.KeyReleaseMask)
         d.flush()

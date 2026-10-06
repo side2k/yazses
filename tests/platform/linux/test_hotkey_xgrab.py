@@ -35,9 +35,38 @@ def test_auto_resolves_to_default():
 
 def test_known_keys_accepted():
     for key in ["space", "right_ctrl", "left_ctrl", "right_alt", "left_alt",
-                "right_meta", "left_meta", "right_shift", "left_shift"]:
+                "right_meta", "left_meta", "right_shift", "left_shift",
+                "previoussong", "nextsong", "playpause", "search"]:
         hk = _make_hotkey(key_id=key)
         assert hk.key_id == key
+
+
+def test_every_mapped_keysym_resolves():
+    """An unresolvable name becomes keysym 0, and grabbing that grabs some
+    other key instead of failing."""
+    from yazses.platform.linux.hotkey_xgrab import _KEY_SYM_MAP, _resolve_keysym
+
+    for name, sym in _KEY_SYM_MAP.items():
+        assert _resolve_keysym(sym), f"{name} -> {sym} does not resolve"
+
+
+def test_an_unresolvable_keysym_is_refused():
+    from yazses.platform.linux.hotkey_xgrab import _resolve_keysym
+
+    with pytest.raises(ValueError, match="XF86AudioPrev"):
+        _resolve_keysym("XF86AudioPrev")  # python-xlib spells it XF86_AudioPrev
+
+
+def test_a_key_missing_from_the_keymap_is_not_grabbed(mocker):
+    """keycode 0 is AnyKey to grab_key — it would take the whole keyboard."""
+    display = mocker.MagicMock()
+    display.keysym_to_keycode.return_value = 0
+    mocker.patch("Xlib.display.Display", return_value=display)
+
+    with pytest.raises(RuntimeError, match="no keycode"):
+        _make_hotkey(key_id="previoussong").run()
+
+    display.screen.return_value.root.grab_key.assert_not_called()
 
 
 def test_hold_fires_on_start_after_threshold():

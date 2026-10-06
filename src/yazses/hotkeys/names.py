@@ -20,7 +20,8 @@ promise a key the daemon would reject.
 
 from __future__ import annotations
 
-#: Ordered for display: the modifiers people actually hold, then space.
+#: Ordered for display: the modifiers people actually hold, then space, then the
+#: media keys.
 #: `right_alt` leads because it is the default on Linux and Windows.
 SUPPORTED_HOTKEYS: tuple[str, ...] = (
     "right_alt",
@@ -34,6 +35,11 @@ SUPPORTED_HOTKEYS: tuple[str, ...] = (
     "right_meta",
     "left_meta",
     "space",
+    # Media/search keys: Linux only (see PLATFORM_ONLY).
+    "previoussong",
+    "nextsong",
+    "playpause",
+    "search",
 )
 
 #: The default, and a real setting rather than an absence: the daemon resolves it
@@ -52,7 +58,14 @@ SETTABLE_HOTKEYS: tuple[str, ...] = (AUTO, *SUPPORTED_HOTKEYS)
 #: key absent here is bound everywhere. `SUPPORTED_HOTKEYS` stays the union of all
 #: platforms — a config written on one OS must still be recognised on another — and
 #: the surfaces offering a choice narrow it with `supported_hotkeys_for`.
-PLATFORM_ONLY: dict[str, frozenset[str]] = {}
+PLATFORM_ONLY: dict[str, frozenset[str]] = {
+    # macOS delivers these as NSSystemDefined events, which its backend does not
+    # handle; Windows is untested.
+    "previoussong": frozenset({"linux"}),
+    "nextsong": frozenset({"linux"}),
+    "playpause": frozenset({"linux"}),
+    "search": frozenset({"linux"}),
+}
 
 
 def supported_hotkeys_for(platform: str) -> tuple[str, ...]:

@@ -193,3 +193,18 @@ def test_linux_hotkey_listens_on_any_device_only_for_media_keys(mocker, media):
 
     assert listener_cls.call_args.kwargs["any_device"] is media
 
+
+@pytest.mark.parametrize(
+    "name, code",
+    [
+        ("previoussong", ecodes.KEY_PREVIOUSSONG),
+        ("nextsong", ecodes.KEY_NEXTSONG),
+        ("playpause", ecodes.KEY_PLAYPAUSE),
+        ("search", ecodes.KEY_SEARCH),
+    ],
+)
+def test_media_keys_resolve_and_listen_on_any_device(name, code):
+    from yazses.platform.linux.hotkey import listens_on_any_device, resolve_key_id
+
+    assert resolve_key_id(name) == (name, code)
+    assert listens_on_any_device(name)

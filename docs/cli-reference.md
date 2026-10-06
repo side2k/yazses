@@ -853,8 +853,9 @@ is encrypted on-device data and is intentionally not portable (see the
 
 Choices: `auto` (the shipped default — the usual key for your OS), `right_alt`,
 `left_alt`, `right_option`, `left_option`, `right_ctrl`, `left_ctrl`,
-`right_shift`, `left_shift`, `right_meta`, `left_meta`, `space`. Prefer a
-dedicated modifier so it doesn't collide with normal typing.
+`right_shift`, `left_shift`, `right_meta`, `left_meta`, `space`, and on Linux
+`previoussong`, `nextsong`, `playpause`, `search`. Prefer a dedicated modifier
+so it doesn't collide with normal typing.
 
 `right_option` / `left_option` are the macOS names for the alt keys and mean the
 same physical key, so one config file behaves the same on every OS. The command

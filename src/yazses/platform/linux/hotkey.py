@@ -24,6 +24,10 @@ _KEY_MAP: dict[str, int] = {
     # key code so a shared config file behaves sensibly across platforms.
     "right_option": ecodes.KEY_RIGHTALT,
     "left_option": ecodes.KEY_LEFTALT,
+    "previoussong": ecodes.KEY_PREVIOUSSONG,
+    "nextsong": ecodes.KEY_NEXTSONG,
+    "playpause": ecodes.KEY_PLAYPAUSE,
+    "search": ecodes.KEY_SEARCH,
 }
 
 # Keys whose press produces a printable character that needs cleanup via
@@ -33,7 +37,7 @@ _CHARACTER_KEYS: frozenset[str] = frozenset({"space"})
 # Keys that often arrive on a partial device (e.g. a receiver's "Consumer
 # Control" node) rather than the full keyboard, so every real device exposing
 # them is listened on. See EvdevHoldListener's `any_device`.
-_MEDIA_KEYS: frozenset[str] = frozenset()
+_MEDIA_KEYS: frozenset[str] = frozenset({"previoussong", "nextsong", "playpause", "search"})
 
 
 def listens_on_any_device(key_id: str) -> bool:
