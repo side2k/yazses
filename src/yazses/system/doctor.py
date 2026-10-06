@@ -1362,16 +1362,21 @@ def _hotkey_device_check(cfg) -> _Check | None:
         return None
     try:
         from yazses.hotkeys.evdev_hold import EvdevHoldListener, _is_virtual_device
-        from yazses.platform.linux.hotkey import resolve_key_id
+        from yazses.platform.linux.hotkey import listens_on_any_device, resolve_key_id
     except Exception:
         return None
     key_id = cfg.hotkey.key if cfg is not None else "space"
     try:
-        _, code = resolve_key_id(key_id)
+        name, code = resolve_key_id(key_id)
     except Exception:
         return ("Hotkey device", "WARN", f"unknown hotkey {key_id!r}")
     try:
-        listener = EvdevHoldListener(200, lambda _l: None, lambda: None, key_code=code)
+        # Same device selection as the daemon's LinuxHotkey, or this reports a
+        # device the daemon does not listen on.
+        listener = EvdevHoldListener(
+            200, lambda _l: None, lambda: None, key_code=code,
+            any_device=listens_on_any_device(name),
+        )
         devs = listener._find_keyboards()
     except Exception as exc:
         # Permission / no-device issues are already surfaced by "Keyboard capture".

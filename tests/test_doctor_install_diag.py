@@ -92,6 +92,28 @@ def test_hotkey_device_skip_on_enumeration_error(mocker):
     assert status == "SKIP"
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="evdev/hotkey path is Linux-only")
+@pytest.mark.parametrize("media", [False, True])
+def test_hotkey_device_selects_devices_like_the_daemon(mocker, media):
+    """A media key is listened for on partial devices too; doctor must select
+    the same devices, or it reports one the daemon does not listen on."""
+    from yazses.platform.linux import hotkey
+
+    mocker.patch.object(
+        hotkey, "_MEDIA_KEYS", frozenset({"right_alt"}) if media else frozenset()
+    )
+    listener_cls = mocker.patch("yazses.hotkeys.evdev_hold.EvdevHoldListener")
+    listener_cls.return_value._find_keyboards.return_value = [
+        _fake_dev("Logitech USB Receiver Consumer Control", "/dev/input/event16"),
+    ]
+
+    name, status, detail = doctor._hotkey_device_check(_Cfg())
+
+    assert listener_cls.call_args.kwargs["any_device"] is media
+    assert status == "OK"
+    assert "Consumer Control" in detail
+
+
 # ---- _systemd_execstart parsing -------------------------------------------
 
 

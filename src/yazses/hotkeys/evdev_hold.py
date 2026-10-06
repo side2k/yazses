@@ -38,6 +38,7 @@ class EvdevHoldListener:
         on_hold_end: Callable[[], None],
         key_code: int = ecodes.KEY_SPACE,
         produces_char: bool = False,
+        any_device: bool = False,
     ) -> None:
         self._detector = HoldDetector(threshold_ms=threshold_ms)
         self._on_hold_start = on_hold_start
@@ -50,6 +51,11 @@ class EvdevHoldListener:
         # threshold there only clips the first words of speech (the threshold
         # fires on a kernel key-repeat event ~0.5 s after the press).
         self._produces_char = produces_char
+        # Keys that live off the letter block (media keys) often arrive on a
+        # separate partial device — a receiver's "Consumer Control" node — even
+        # when a full keyboard advertises the same code. For those, every real
+        # device exposing the key is a legitimate source.
+        self._any_device = any_device
         self._recording = False
         self._stopping = False
         self._keyboards: list[evdev.InputDevice] = []
@@ -83,7 +89,8 @@ class EvdevHoldListener:
 
         # Prefer every real device that looks like a full keyboard; else every
         # real device exposing the key; else (with a warning) a virtual one.
-        chosen = full or real
+        # `any_device` skips the preference and takes every real device.
+        chosen = real if self._any_device else (full or real)
         if chosen:
             for dev in chosen:
                 log.info("Listening on keyboard device: %s (%s)", dev.name, dev.path)
