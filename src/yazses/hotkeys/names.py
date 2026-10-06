@@ -48,6 +48,24 @@ AUTO = "auto"
 #: default short of editing TOML by hand.
 SETTABLE_HOTKEYS: tuple[str, ...] = (AUTO, *SUPPORTED_HOTKEYS)
 
+#: Keys only some platforms bind, mapped to the `Platform.name` values that do; a
+#: key absent here is bound everywhere. `SUPPORTED_HOTKEYS` stays the union of all
+#: platforms — a config written on one OS must still be recognised on another — and
+#: the surfaces offering a choice narrow it with `supported_hotkeys_for`.
+PLATFORM_ONLY: dict[str, frozenset[str]] = {}
+
+
+def supported_hotkeys_for(platform: str) -> tuple[str, ...]:
+    """The keys *platform* (a `Platform.name`) binds, in display order."""
+    return tuple(
+        name for name in SUPPORTED_HOTKEYS if platform in PLATFORM_ONLY.get(name, {platform})
+    )
+
+
+def settable_hotkeys_for(platform: str) -> tuple[str, ...]:
+    """What may be written to `[hotkey] key` on *platform*: `auto` plus its keys."""
+    return (AUTO, *supported_hotkeys_for(platform))
+
 #: `right_option` is macOS's name for the key evdev calls `right_alt`; both are
 #: accepted and mean the same physical key. Kept here so a UI can say so rather
 #: than offering two entries that look like different choices.

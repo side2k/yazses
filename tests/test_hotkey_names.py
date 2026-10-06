@@ -24,10 +24,28 @@ from pathlib import Path
 
 import pytest
 
-from yazses.hotkeys.names import ALIASES, SUPPORTED_HOTKEYS, canonical
+from yazses.hotkeys.names import (
+    ALIASES,
+    PLATFORM_ONLY,
+    SUPPORTED_HOTKEYS,
+    canonical,
+    settable_hotkeys_for,
+    supported_hotkeys_for,
+)
+from yazses.platform.base import (
+    LINUX_PLATFORM_NAME,
+    MACOS_PLATFORM_NAME,
+    WINDOWS_PLATFORM_NAME,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 PLATFORMS = ("linux", "macos", "windows")
+#: Each backend package's `Platform.name`, the key `PLATFORM_ONLY` speaks in.
+PLATFORM_NAMES = {
+    "linux": LINUX_PLATFORM_NAME,
+    "macos": MACOS_PLATFORM_NAME,
+    "windows": WINDOWS_PLATFORM_NAME,
+}
 
 
 def _key_map_names(platform: str) -> set[str]:
@@ -43,10 +61,28 @@ def _key_map_names(platform: str) -> set[str]:
 @pytest.mark.parametrize("platform", PLATFORMS)
 def test_every_platform_can_bind_every_offered_key(platform: str) -> None:
     """The offered list must never promise what a backend cannot deliver."""
-    missing = set(SUPPORTED_HOTKEYS) - _key_map_names(platform)
+    offered = supported_hotkeys_for(PLATFORM_NAMES[platform])
+    missing = set(offered) - _key_map_names(platform)
     assert not missing, (
         f"{platform} cannot bind {sorted(missing)}, but they are offered to users. "
-        f"Either add them to that backend's _KEY_MAP or drop them from SUPPORTED_HOTKEYS"
+        f"Either add them to that backend's _KEY_MAP or restrict them in PLATFORM_ONLY"
+    )
+
+
+def test_platform_only_names_offered_keys_and_known_platforms() -> None:
+    for name, platforms in PLATFORM_ONLY.items():
+        assert name in SUPPORTED_HOTKEYS, f"{name} is restricted but never offered"
+        unknown = set(platforms) - set(PLATFORM_NAMES.values())
+        assert not unknown, f"{name} is restricted to unknown platforms {sorted(unknown)}"
+
+
+def test_a_restricted_key_is_offered_only_where_it_is_bound(monkeypatch) -> None:
+    monkeypatch.setitem(PLATFORM_ONLY, "right_meta", frozenset({LINUX_PLATFORM_NAME}))
+    assert "right_meta" in supported_hotkeys_for(LINUX_PLATFORM_NAME)
+    assert "right_meta" not in supported_hotkeys_for(MACOS_PLATFORM_NAME)
+    assert settable_hotkeys_for(MACOS_PLATFORM_NAME) == (
+        "auto",
+        *supported_hotkeys_for(MACOS_PLATFORM_NAME),
     )
 
 

@@ -125,6 +125,27 @@ def test_every_offered_key_is_accepted_by_the_controller(key: str) -> None:
     assert _controller().set_hotkey(key).ok
 
 
+def test_a_key_another_platform_binds_is_neither_offered_nor_accepted(monkeypatch) -> None:
+    from yazses.hotkeys import names
+
+    monkeypatch.setitem(names.PLATFORM_ONLY, "right_meta", frozenset({"darwin"}))
+    writes: list = []
+    controller = SettingsController(lambda: _Cfg(), lambda *a: writes.append(a),
+                                    platform_name="linux")
+    assert "right_meta" not in controller.hotkey_choices()
+    assert not controller.set_hotkey("right_meta").ok
+    assert writes == []
+
+
+def test_a_key_this_platform_binds_is_offered(monkeypatch) -> None:
+    from yazses.hotkeys import names
+
+    monkeypatch.setitem(names.PLATFORM_ONLY, "right_meta", frozenset({"linux"}))
+    controller = SettingsController(lambda: _Cfg(), lambda *a: None, platform_name="linux")
+    assert "right_meta" in controller.hotkey_choices()
+    assert controller.set_hotkey("right_meta").ok
+
+
 # --- microphone and silence threshold ---------------------------------------
 #
 # The other two thirds of `settingsui/controls.py`, which had no callers either.

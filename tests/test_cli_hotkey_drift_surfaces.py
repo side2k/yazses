@@ -54,6 +54,7 @@ class _Client:
 def _platform(config_file: Path, *, live: dict | None = None, running: bool = True,
               reachable: bool = True, boom: bool = False, default: str = "space"):
     return types.SimpleNamespace(
+        name="linux",
         default_hotkey=default,
         paths=types.SimpleNamespace(config_file=config_file, ipc_socket=config_file.parent / "s"),
         lifecycle=types.SimpleNamespace(is_running=lambda: running),

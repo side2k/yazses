@@ -15,6 +15,7 @@ from yazses import cli
 
 def _fake_platform(config_file: Path, default="space"):
     return types.SimpleNamespace(
+        name="linux",
         default_hotkey=default,
         paths=types.SimpleNamespace(config_file=config_file),
     )
@@ -122,3 +123,29 @@ def test_the_command_key_does_not_accept_auto(monkeypatch, tmp_path):
     result, cfg = _run(monkeypatch, tmp_path, ["hotkey", "command", "auto"])
     assert result.exit_code == 1
     assert "command_key" not in cfg.read_text(encoding="utf-8")
+
+
+def test_a_key_another_platform_binds_is_neither_offered_nor_accepted(monkeypatch, tmp_path):
+    """`SUPPORTED_HOTKEYS` is the union of every platform's keys; offering a key
+    this platform cannot bind would write a config the daemon then rejects."""
+    from yazses.hotkeys import names
+
+    monkeypatch.setitem(names.PLATFORM_ONLY, "right_meta", frozenset({"darwin"}))
+
+    result, cfg = _run(monkeypatch, tmp_path, ["hotkey", "set", "right_meta"])
+    assert result.exit_code == 1
+    assert "right_meta" not in cfg.read_text(encoding="utf-8")
+
+    result, cfg = _run(monkeypatch, tmp_path, ["hotkey", "command", "right_meta"])
+    assert result.exit_code == 1
+    assert "command_key" not in cfg.read_text(encoding="utf-8")
+
+
+def test_a_key_this_platform_binds_is_accepted(monkeypatch, tmp_path):
+    from yazses.hotkeys import names
+
+    monkeypatch.setitem(names.PLATFORM_ONLY, "right_meta", frozenset({"linux"}))
+
+    result, cfg = _run(monkeypatch, tmp_path, ["hotkey", "set", "right_meta"])
+    assert result.exit_code == 0, result.output
+    assert "right_meta" in cfg.read_text(encoding="utf-8")
