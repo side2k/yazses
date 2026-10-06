@@ -862,6 +862,13 @@ same physical key, so one config file behaves the same on every OS. The command
 key accepts everything except `auto`, which means "the platform's default
 *dictation* key" and would land on the dictation key itself.
 
+The media keys (`previoussong`, `nextsong`, `playpause`, `search`) are Linux-only and
+work from any keyboard or receiver that sends them, including its separate "Consumer
+Control" device. YazSes only listens for the key, it does not take it over: the
+desktop still runs its own action for it (e.g. *Previous track*), so unbind that
+shortcut in your desktop's keyboard settings. Under the X11 grab backend (the snap
+on X11) the key cannot be bound at all while the desktop holds it.
+
 The same list is a dropdown in [the Settings window](settings-gui.md).
 
 ```bash
