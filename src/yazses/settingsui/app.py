@@ -140,6 +140,7 @@ def run() -> None:
         _write,
         language_previewer=_preview_language,
         language_applier=_apply_language,
+        platform_name=platform.name,
     )
 
     app = QApplication.instance() or QApplication(sys.argv)
@@ -327,21 +328,21 @@ class SettingsWindow:
 
         A dropdown rather than a "press a key" capture: the platforms bind eleven
         specific keys, and a capture box would happily accept F13 and then leave
-        the user unable to dictate. `SUPPORTED_HOTKEYS` is the same list
+        the user unable to dictate. `hotkey_choices()` is the same list
         `yazses hotkey set` offers, so the two surfaces cannot disagree.
         """
         from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel
 
-        from yazses.hotkeys.names import SETTABLE_HOTKEYS
+        choices = self._controller.hotkey_choices()
 
         line = QHBoxLayout()
         label = QLabel("Hold-to-talk key:")
         line.addWidget(label)
 
         box = QComboBox()
-        box.addItems(SETTABLE_HOTKEYS)
-        if current in SETTABLE_HOTKEYS:
-            box.setCurrentIndex(SETTABLE_HOTKEYS.index(current))
+        box.addItems(choices)
+        if current in choices:
+            box.setCurrentIndex(choices.index(current))
         elif current:
             # A hand-edited config can hold something not offered. Show it rather
             # than silently selecting a different key the user never chose.

@@ -6,6 +6,14 @@ project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — media and search keys as hold-to-talk keys (Linux)
+
+`previoussong`, `nextsong`, `playpause` and `search` can now be the dictation or
+command key on Linux (`yazses hotkey set previoussong`). They often arrive on a
+separate "Consumer Control" device rather than the keyboard itself, so YazSes now
+listens on every real device exposing such a key, and `yazses doctor` reports the
+same devices. The keys are not offered on macOS or Windows.
+
 ## [2.42.0] - 2026-10-04
 
 ### Added — `yazses verify --type` now proves typed text arrives, and repairs the sender once if it does not

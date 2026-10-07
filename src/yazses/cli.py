@@ -11,7 +11,7 @@ from typing import Literal, Optional
 import typer
 
 from yazses import branding
-from yazses.hotkeys.names import SETTABLE_HOTKEYS, SUPPORTED_HOTKEYS, canonical
+from yazses.hotkeys.names import canonical, settable_hotkeys_for, supported_hotkeys_for
 from yazses.ipc.client import IpcUnreachableError
 from yazses.platform import get_paths, get_platform
 from yazses.system.logtail import tail_records
@@ -3549,7 +3549,7 @@ def hotkey_show() -> None:
     drift = _hotkey_drift_note(platform)
     if drift:
         typer.secho(f"\n⚠ {drift}", fg=typer.colors.YELLOW)
-    typer.echo(f"Choices: {', '.join(SETTABLE_HOTKEYS)}")
+    typer.echo(f"Choices: {', '.join(settable_hotkeys_for(platform.name))}")
 
 
 @hotkey_app.command(
@@ -3571,14 +3571,13 @@ def hotkey_set(
     # and means "the usual key for this OS". Offering only bindable keys made
     # picking one a door that closed behind you, with no way back to the default
     # short of editing TOML.
-    if key not in SETTABLE_HOTKEYS:
-        typer.echo(
-            f"Unknown key {key!r}. Choose one of: {', '.join(SETTABLE_HOTKEYS)}", err=True
-        )
+    platform = get_platform()
+    settable = settable_hotkeys_for(platform.name)
+    if key not in settable:
+        typer.echo(f"Unknown key {key!r}. Choose one of: {', '.join(settable)}", err=True)
         raise typer.Exit(1)
     from yazses.system.configedit import set_config_key
 
-    platform = get_platform()
     set_config_key(platform.paths.config_file, "hotkey", "key", key)
     typer.echo(f"Hold-to-talk key set to {key!r}. Apply it:  yazses restart")
 
@@ -3616,9 +3615,10 @@ def hotkey_command(
     # SUPPORTED, not SETTABLE: `auto` means "the platform's default dictation
     # key", which is meaningless for a *command* key and would silently alias
     # onto the dictation key on most machines.
-    if key not in SUPPORTED_HOTKEYS:
+    supported = supported_hotkeys_for(platform.name)
+    if key not in supported:
         typer.echo(
-            f"Unknown key {key!r}. Choose one of: {', '.join(SUPPORTED_HOTKEYS)}, or 'off'.",
+            f"Unknown key {key!r}. Choose one of: {', '.join(supported)}, or 'off'.",
             err=True,
         )
         raise typer.Exit(1)

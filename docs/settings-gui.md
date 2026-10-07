@@ -210,7 +210,7 @@ the same choices as `yazses hotkey set`, including **`auto`** — the shipped
 default, meaning "the usual key for this operating system".
 
 It is a dropdown rather than a press-a-key capture on purpose. The platforms bind
-eleven specific keys; a capture box would accept F13 quite happily and leave you
+a fixed set of keys; a capture box would accept F13 quite happily and leave you
 unable to dictate, with nothing on screen connecting the two.
 
 Two keys it will refuse, before writing anything:

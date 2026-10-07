@@ -157,6 +157,7 @@ class SettingsController:
         blocked_probe: BlockedProbe | None = None,
         language_previewer: LanguagePreviewer | None = None,
         language_applier: LanguageApplier | None = None,
+        platform_name: str | None = None,
     ) -> None:
         self._load_config = load_config
         self._writer = writer
@@ -164,6 +165,16 @@ class SettingsController:
         self._blocked_probe = blocked_probe or install_blocked_reason
         self._language_previewer = language_previewer
         self._language_applier = language_applier
+        self._platform_name = platform_name
+
+    def hotkey_choices(self) -> tuple[str, ...]:
+        """The keys the picker offers: every settable key, narrowed to the
+        platform's when one was given."""
+        from yazses.hotkeys.names import SETTABLE_HOTKEYS, settable_hotkeys_for
+
+        if self._platform_name is None:
+            return SETTABLE_HOTKEYS
+        return settable_hotkeys_for(self._platform_name)
 
     def preview_language_profile(
         self,
@@ -214,17 +225,17 @@ class SettingsController:
 
         Two rejections, and the second is the interesting one:
 
-        * not in `SUPPORTED_HOTKEYS` — no backend binds it.
+        * not in `hotkey_choices()` — this platform's backend does not bind it.
         * the same physical key as ``[hotkey] command_key`` — command mode would
           swallow every dictation burst. Compared through `canonical()` because
           `right_option` and `right_alt` are one key under two names, so a string
           comparison would wave the clash straight through.
         """
-        from yazses.hotkeys.names import AUTO, SETTABLE_HOTKEYS, canonical
+        from yazses.hotkeys.names import AUTO, canonical
         from yazses.settingsui.controls import validate_hotkey
 
         cleaned = (key or "").strip().lower()
-        problem = validate_hotkey(cleaned, SETTABLE_HOTKEYS)
+        problem = validate_hotkey(cleaned, self.hotkey_choices())
         if problem:
             return ToggleResult(ok=False, error=problem)
 

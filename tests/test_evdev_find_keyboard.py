@@ -135,3 +135,76 @@ def test_find_keyboards_excludes_partial_blocks_when_full_exists(mocker):
     chosen = _listener(key_code=ecodes.KEY_RIGHTCTRL)._find_keyboards()
 
     assert [d.name for d in chosen] == ["AT Translated Set 2 keyboard"]
+
+
+_CONSUMER_CONTROL_KEYS = {ecodes.KEY_PREVIOUSSONG, ecodes.KEY_NEXTSONG, ecodes.KEY_PLAYPAUSE}
+
+
+def test_any_device_listens_on_partial_devices_next_to_a_full_keyboard(mocker):
+    """A receiver's media keys arrive on its "Consumer Control" node, while the
+    laptop keyboard advertises the same code — the partial device must not be
+    dropped, or pressing the key on the external keyboard does nothing."""
+    full = _FakeDevice(
+        "/dev/input/event3",
+        "AT Translated Set 2 keyboard",
+        _FULL_KEYBOARD | _CONSUMER_CONTROL_KEYS,
+    )
+    consumer = _FakeDevice(
+        "/dev/input/event16", "Logitech USB Receiver Consumer Control", _CONSUMER_CONTROL_KEYS
+    )
+    _patch_devices(mocker, [full, consumer])
+
+    listener = EvdevHoldListener(
+        200, lambda _l: None, lambda: None, key_code=ecodes.KEY_PREVIOUSSONG, any_device=True
+    )
+
+    assert {d.name for d in listener._find_keyboards()} == {
+        "AT Translated Set 2 keyboard",
+        "Logitech USB Receiver Consumer Control",
+    }
+
+
+def test_any_device_still_excludes_virtual_devices(mocker):
+    virtual = _FakeDevice("/dev/input/event20", "keyd virtual keyboard", _CONSUMER_CONTROL_KEYS)
+    consumer = _FakeDevice(
+        "/dev/input/event16", "Logitech USB Receiver Consumer Control", _CONSUMER_CONTROL_KEYS
+    )
+    _patch_devices(mocker, [virtual, consumer])
+
+    listener = EvdevHoldListener(
+        200, lambda _l: None, lambda: None, key_code=ecodes.KEY_PREVIOUSSONG, any_device=True
+    )
+
+    assert [d.name for d in listener._find_keyboards()] == [
+        "Logitech USB Receiver Consumer Control"
+    ]
+
+
+@pytest.mark.parametrize("media", [False, True])
+def test_linux_hotkey_listens_on_any_device_only_for_media_keys(mocker, media):
+    from yazses.platform.linux import hotkey
+
+    mocker.patch.object(
+        hotkey, "_MEDIA_KEYS", frozenset({"right_ctrl"}) if media else frozenset()
+    )
+    listener_cls = mocker.patch.object(hotkey, "EvdevHoldListener")
+
+    hotkey.LinuxHotkey("right_ctrl", 200, lambda _l: None, lambda: None)
+
+    assert listener_cls.call_args.kwargs["any_device"] is media
+
+
+@pytest.mark.parametrize(
+    "name, code",
+    [
+        ("previoussong", ecodes.KEY_PREVIOUSSONG),
+        ("nextsong", ecodes.KEY_NEXTSONG),
+        ("playpause", ecodes.KEY_PLAYPAUSE),
+        ("search", ecodes.KEY_SEARCH),
+    ],
+)
+def test_media_keys_resolve_and_listen_on_any_device(name, code):
+    from yazses.platform.linux.hotkey import listens_on_any_device, resolve_key_id
+
+    assert resolve_key_id(name) == (name, code)
+    assert listens_on_any_device(name)

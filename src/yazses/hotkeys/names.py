@@ -20,7 +20,8 @@ promise a key the daemon would reject.
 
 from __future__ import annotations
 
-#: Ordered for display: the modifiers people actually hold, then space.
+#: Ordered for display: the modifiers people actually hold, then space, then the
+#: media keys.
 #: `right_alt` leads because it is the default on Linux and Windows.
 SUPPORTED_HOTKEYS: tuple[str, ...] = (
     "right_alt",
@@ -34,6 +35,11 @@ SUPPORTED_HOTKEYS: tuple[str, ...] = (
     "right_meta",
     "left_meta",
     "space",
+    # Media/search keys: Linux only (see PLATFORM_ONLY).
+    "previoussong",
+    "nextsong",
+    "playpause",
+    "search",
 )
 
 #: The default, and a real setting rather than an absence: the daemon resolves it
@@ -47,6 +53,31 @@ AUTO = "auto"
 #: key was a one-way door — nothing offered `auto`, so there was no way back to the
 #: default short of editing TOML by hand.
 SETTABLE_HOTKEYS: tuple[str, ...] = (AUTO, *SUPPORTED_HOTKEYS)
+
+#: Keys only some platforms bind, mapped to the `Platform.name` values that do; a
+#: key absent here is bound everywhere. `SUPPORTED_HOTKEYS` stays the union of all
+#: platforms — a config written on one OS must still be recognised on another — and
+#: the surfaces offering a choice narrow it with `supported_hotkeys_for`.
+PLATFORM_ONLY: dict[str, frozenset[str]] = {
+    # macOS delivers these as NSSystemDefined events, which its backend does not
+    # handle; Windows is untested.
+    "previoussong": frozenset({"linux"}),
+    "nextsong": frozenset({"linux"}),
+    "playpause": frozenset({"linux"}),
+    "search": frozenset({"linux"}),
+}
+
+
+def supported_hotkeys_for(platform: str) -> tuple[str, ...]:
+    """The keys *platform* (a `Platform.name`) binds, in display order."""
+    return tuple(
+        name for name in SUPPORTED_HOTKEYS if platform in PLATFORM_ONLY.get(name, {platform})
+    )
+
+
+def settable_hotkeys_for(platform: str) -> tuple[str, ...]:
+    """What may be written to `[hotkey] key` on *platform*: `auto` plus its keys."""
+    return (AUTO, *supported_hotkeys_for(platform))
 
 #: `right_option` is macOS's name for the key evdev calls `right_alt`; both are
 #: accepted and mean the same physical key. Kept here so a UI can say so rather

@@ -24,11 +24,26 @@ _KEY_MAP: dict[str, int] = {
     # key code so a shared config file behaves sensibly across platforms.
     "right_option": ecodes.KEY_RIGHTALT,
     "left_option": ecodes.KEY_LEFTALT,
+    "previoussong": ecodes.KEY_PREVIOUSSONG,
+    "nextsong": ecodes.KEY_NEXTSONG,
+    "playpause": ecodes.KEY_PLAYPAUSE,
+    "search": ecodes.KEY_SEARCH,
 }
 
 # Keys whose press produces a printable character that needs cleanup via
 # backspace when used as a hold-to-talk hotkey. Modifier-only keys don't.
 _CHARACTER_KEYS: frozenset[str] = frozenset({"space"})
+
+# Keys that often arrive on a partial device (e.g. a receiver's "Consumer
+# Control" node) rather than the full keyboard, so every real device exposing
+# them is listened on. See EvdevHoldListener's `any_device`.
+_MEDIA_KEYS: frozenset[str] = frozenset({"previoussong", "nextsong", "playpause", "search"})
+
+
+def listens_on_any_device(key_id: str) -> bool:
+    """True if *key_id* (canonical, as `resolve_key_id` returns it) is listened
+    for on every real device exposing it, not only on full keyboards."""
+    return key_id in _MEDIA_KEYS
 
 
 def resolve_key_id(key_id: str, default: str = "right_alt") -> tuple[str, int]:
@@ -67,6 +82,7 @@ class LinuxHotkey:
             on_hold_end=on_hold_end,
             key_code=key_code,
             produces_char=self._produces_char,
+            any_device=listens_on_any_device(self._key_id),
         )
 
     def run(self) -> None:
