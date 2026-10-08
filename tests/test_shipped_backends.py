@@ -354,14 +354,11 @@ def test_speaker_bounds_translate_the_zero_means_auto_convention(
 
 
 def _assert_names_the_whole_remedy(message):
-    """Both gated repos, the acceptance step, and a way to authenticate."""
-    from yazses.recimport.pyannote_backend import PIPELINE_ID, SEGMENTATION_ID
+    """The gated repo, the acceptance step, and a way to authenticate."""
+    from yazses.recimport.pyannote_backend import PIPELINE_ID
 
     assert "conditions" in message, message
     assert PIPELINE_ID in message, message
-    # The near-miss this exists for: accepting the pipeline and not the
-    # segmentation model it loads, which fails with an error naming neither.
-    assert SEGMENTATION_ID in message, message
     assert "HF_TOKEN" in message and "hf auth login" in message, message
 
 

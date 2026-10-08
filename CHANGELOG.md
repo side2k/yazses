@@ -6,6 +6,17 @@ project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed — the pyannote diarization backend uses `speaker-diarization-community-1`
+
+`backend = "pyannote"` (`[recimport]` / `[meeting]`) now loads
+`pyannote/speaker-diarization-community-1` instead of `pyannote/speaker-diarization-3.1`.
+It is pyannote.audio 4's recommended pipeline, and it bundles its segmentation,
+embedding and PLDA models in one gated repo, so only one set of conditions has to be
+accepted (previously `segmentation-3.0` was gated separately). Its `DiarizeOutput`
+result is read through the non-overlapping annotation, so each instant keeps a single
+speaker for word alignment. Users of this backend must accept the new repo's
+conditions once; the default `sherpa` backend is unaffected.
+
 ## [2.42.0] - 2026-10-04
 
 ### Added — `yazses verify --type` now proves typed text arrives, and repairs the sender once if it does not

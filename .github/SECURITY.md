@@ -127,13 +127,13 @@ What bounds it:
    only by asking for it by name.
 2. **It is not the default backend.** Diarization defaults to `sherpa` — ONNX
    Runtime, no torch, no lightning. `backend = "pyannote"` is a choice.
-3. **The checkpoint is not attacker-selectable.** `PIPELINE_ID` and
-   `SEGMENTATION_ID` in `yazses/recimport/pyannote_backend.py` are hardcoded
-   module constants. There is no config key that redirects them, and nothing in
-   YazSes loads a user-supplied `.ckpt` from anywhere. So the malicious
-   checkpoint has to arrive *as* `pyannote/speaker-diarization-3.1` or
-   `pyannote/segmentation-3.0` — which means compromising those gated
-   repositories on Hugging Face, not handing you a file.
+3. **The checkpoint is not attacker-selectable.** `PIPELINE_ID` in
+   `yazses/recimport/pyannote_backend.py` is a hardcoded module constant. There
+   is no config key that redirects it, and nothing in YazSes loads a
+   user-supplied `.ckpt` from anywhere. So the malicious checkpoint has to
+   arrive *as* `pyannote/speaker-diarization-community-1`, which bundles its
+   segmentation, embedding and PLDA models — which means compromising that gated
+   repository on Hugging Face, not handing you a file.
 
 Fact 3 is the load-bearing one and the one most likely to be broken by a future
 change, so it is the one the tests pin: adding a `[meeting] pyannote_model`
@@ -144,17 +144,16 @@ stop being literals, if the loader is called with anything else, or if
 itself, so a future re-pin or downgrade cannot silently drop back below 2.6.6
 and reopen a CVE this project once could not close by any means.
 
-**Residual risk, stated plainly.** If those upstream repositories are compromised,
+**Residual risk, stated plainly.** If that upstream repository is compromised,
 you execute their code. That is true here *independently of this CVE* — pyannote
 reads its pipeline class name out of the downloaded `config.yaml` and imports it —
 so the honest summary is that trusting the model is part of using pyannote, and
 this advisory does not change the trust boundary so much as make it explicit.
 Passing `revision=` to pin the model to a known commit is the obvious next
 hardening and is **not implemented**: pyannote propagates a parent revision only
-to `$model/`-style child references, and `pyannote/segmentation-3.0` is a
-separately gated repository, so how far a pin actually reaches could not be
-verified without accepting the gated licence. It is written down here rather than
-guessed at.
+to `$model/`-style child references. `community-1` references all of its models
+that way, but that a pin reaches them has not been verified. It is written down
+here rather than guessed at.
 
 If you do not use pyannote diarization — which is the default — none of this is
 installed on your machine.

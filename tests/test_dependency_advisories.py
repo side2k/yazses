@@ -351,10 +351,10 @@ def test_the_model_ids_are_hardcoded_literals():
             list(node.targets) if isinstance(node, ast.Assign) else []
         )
         for t in targets:
-            if isinstance(t, ast.Name) and t.id in ("PIPELINE_ID", "SEGMENTATION_ID"):
+            if isinstance(t, ast.Name) and t.id == "PIPELINE_ID":
                 literals[t.id] = node.value
-    assert set(literals) == {"PIPELINE_ID", "SEGMENTATION_ID"}, (
-        f"expected both model ids at module level, found {sorted(literals)}"
+    assert set(literals) == {"PIPELINE_ID"}, (
+        f"expected the model id at module level, found {sorted(literals)}"
     )
     for name, value in literals.items():
         assert isinstance(value, ast.Constant) and isinstance(value.value, str), (
