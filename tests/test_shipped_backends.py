@@ -278,6 +278,30 @@ def test_a_normal_pipeline_result_still_produces_turns(monkeypatch):
     assert [t.speaker for t in turns] == ["speaker_0"]
 
 
+class _DiarizeOutput:
+    """pyannote 4's non-legacy result: two annotations, not one."""
+
+    def __init__(self, overlapping, exclusive):
+        self.speaker_diarization = _Annotation(overlapping)
+        self.exclusive_speaker_diarization = _Annotation(exclusive)
+
+
+def test_a_diarize_output_result_reads_the_exclusive_annotation(monkeypatch):
+    """Alignment assumes one speaker per instant, so overlap must not leak in."""
+    result = _DiarizeOutput(
+        overlapping=[(0.0, 2.0, "SPEAKER_00"), (1.0, 3.0, "SPEAKER_01")],
+        exclusive=[(0.0, 1.0, "SPEAKER_00"), (1.0, 3.0, "SPEAKER_01")],
+    )
+    _fake_pyannote(monkeypatch, [], result=result)
+    from yazses.recimport.pyannote_backend import PyannoteDiarizer
+
+    turns = PyannoteDiarizer(_DiarCfg()).diarize(np.zeros(16000, dtype="float32"))
+    assert [(t.start, t.end, t.speaker) for t in turns] == [
+        (0.0, 1.0, "speaker_0"),
+        (1.0, 3.0, "speaker_1"),
+    ]
+
+
 def test_pyannote_labels_are_normalised_to_the_sherpa_shape(monkeypatch):
     """Downstream naming/alignment key off ``speaker_<n>``, not ``SPEAKER_00``.
 

@@ -233,6 +233,12 @@ class PyannoteDiarizer:
                 **self._speaker_bounds(),
             )
 
+        # pyannote 4's non-legacy pipelines return a `DiarizeOutput` wrapping two
+        # annotations instead of an `Annotation`. Take the exclusive one: it has no
+        # overlapping turns, which is what word-to-speaker alignment downstream
+        # assumes -- one speaker per instant.
+        annotation = getattr(annotation, "exclusive_speaker_diarization", annotation)
+
         # pyannote's base `Pipeline.__call__` is typed as returning either the
         # pipeline's own result or an iterator, because it also accepts an iterable
         # of files. `SpeakerDiarization` returns an `Annotation`, and `itertracks`
