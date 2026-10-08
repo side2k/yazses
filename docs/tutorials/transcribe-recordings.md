@@ -126,8 +126,8 @@ yazses transcribe call.ogg --diarize --speakers 2
       **ignored**. The run says so before transcribing rather than quietly dropping
       the floor. To get a real lower bound, install `diarization-pyannote` and set
       `[recimport] backend = "pyannote"` — it is a gated model download, so it also
-      needs a Hugging Face account that has accepted the conditions for both
-      `pyannote/speaker-diarization-3.1` and `pyannote/segmentation-3.0`.
+      needs a Hugging Face account that has accepted the conditions for
+      `pyannote/speaker-diarization-community-1`.
 
     If you know the count, `--speakers N` is the flag that does what you mean. If
     you do not, leave all three alone: auto-detection is the default and is what

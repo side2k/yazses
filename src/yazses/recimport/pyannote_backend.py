@@ -46,7 +46,7 @@ your usage pattern would have been, silently, from a tool whose entire promise
 is that nothing leaves the machine.
 
 The only network access this backend then makes is the *one-time model download*
-from Hugging Face, because ``pyannote/speaker-diarization-3.1`` is a gated repo
+from Hugging Face, because ``pyannote/speaker-diarization-community-1`` is a gated repo
 whose conditions must be accepted once. The token is read from the environment
 or the standard Hugging Face cache and is **deliberately not a config key** —
 ``yazses report`` bundles the config, and a credential in ``config.toml`` is a
@@ -67,13 +67,9 @@ log = logging.getLogger(__name__)
 # The gated pretrained pipeline. Pinned rather than tracking "latest": a
 # diarization model change alters every speaker boundary, and a stored meeting
 # transcript should not shift because an upstream default moved.
-PIPELINE_ID = "pyannote/speaker-diarization-3.1"
-
-# The pipeline loads this internally, and it is gated *separately*. Accepting
-# only the pipeline's conditions still fails, with an error that names neither
-# repo — which is why this id is spelled out in the remedy below rather than
-# left for the user to discover from a stack trace.
-SEGMENTATION_ID = "pyannote/segmentation-3.0"
+# community-1 bundles its segmentation, embedding and PLDA models in this one
+# repo (`$model/` references), so there is no second gated repo to accept.
+PIPELINE_ID = "pyannote/speaker-diarization-community-1"
 
 # Checked in order; the first non-empty wins. These are the names the
 # huggingface_hub tooling itself honours, so a user who has already run
@@ -153,15 +149,13 @@ def _gated_model_error(cause: str = "") -> RuntimeError:
     Hugging Face's own error names the token and stops there. The step people
     actually miss is the acceptance — a perfectly valid token still fails until
     the conditions are accepted, and the resulting message reads as if the token
-    were wrong. Both repos are named because accepting one of them is the more
-    common near-miss than accepting neither.
+    were wrong.
     """
     detail = f" {cause.strip()}" if cause.strip() else ""
     return RuntimeError(
         f"Could not load {PIPELINE_ID}.{detail} It is a gated model, so a token "
         f"alone is not enough: accept the conditions at https://hf.co/{PIPELINE_ID} "
-        f"*and* at https://hf.co/{SEGMENTATION_ID} (the pipeline loads both) with "
-        "the same Hugging Face account, then run `hf auth login` (older installs: "
+        "with your Hugging Face account, then run `hf auth login` (older installs: "
         "`huggingface-cli login`) or set HF_TOKEN. The download happens once; "
         "diarization itself runs offline."
     )
@@ -232,6 +226,12 @@ class PyannoteDiarizer:
                 {"waveform": waveform, "sample_rate": int(sample_rate)},
                 **self._speaker_bounds(),
             )
+
+        # pyannote 4's non-legacy pipelines return a `DiarizeOutput` wrapping two
+        # annotations instead of an `Annotation`. Take the exclusive one: it has no
+        # overlapping turns, which is what word-to-speaker alignment downstream
+        # assumes -- one speaker per instant.
+        annotation = getattr(annotation, "exclusive_speaker_diarization", annotation)
 
         # pyannote's base `Pipeline.__call__` is typed as returning either the
         # pipeline's own result or an iterator, because it also accepts an iterable
